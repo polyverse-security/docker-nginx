@@ -4,6 +4,8 @@ MAINTAINER NGINX Docker Maintainers "docker-maint@nginx.com"
 
 ENV NGINX_VERSION 1.10.2
 
+COPY modsecurity-2.9.1.tar.gz /usr/src/modsecurity-2.9.1.tar.gz
+
 RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& CONFIG="\
 		--prefix=/etc/nginx \
@@ -59,11 +61,14 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 		zlib-dev \
 		linux-headers \
 		curl \
+		tar \
 		gnupg \
 		libxslt-dev \
 		gd-dev \
 		geoip-dev \
 		perl-dev \
+		apache2-dev \
+		libxml2-dev \
 	&& curl -fSL http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz \
 	&& curl -fSL http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz.asc  -o nginx.tar.gz.asc \
 	&& export GNUPGHOME="$(mktemp -d)" \
@@ -71,10 +76,22 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& gpg --batch --verify nginx.tar.gz.asc nginx.tar.gz \
 	&& rm -r "$GNUPGHOME" nginx.tar.gz.asc \
 	&& mkdir -p /usr/src \
+	&& echo tar -zxC /usr/src -f nginx.tar.gz \
 	&& tar -zxC /usr/src -f nginx.tar.gz \
 	&& rm nginx.tar.gz \
+	&& echo https://www.feistyduck.com/library/modsecurity-handbook-free/online/ch02-installation.html \
+	&& echo curl -o /usr/src/modsecurity-2.9.1.tar.gz https://www.modsecurity.org/tarball/2.9.1/modsecurity-2.9.1.tar.gz \
+	&& echo curl -o /usr/src/modsecurity-2.9.1.tar.gz https://www.modsecurity.org/tarball/2.9.1/modsecurity-2.9.1.tar.gz \
+	&& ls -al /usr/src \
+  && echo mkdir -p /usr/src/modsecurity && echo tar -zxC /usr/src/modsecurity -f /usr/src/modsecurity-2.9.1.tar.gz --strip-components=1\
+	&& echo ls -al /usr/src/modsecurity-2.9.1.tar.gz \
+	&& ls -al /usr/src/modsecurity-2.9.1.tar.gz \
+  && mkdir -p /usr/src/modsecurity && tar -zxC /usr/src/modsecurity -f /usr/src/modsecurity-2.9.1.tar.gz --strip-components=1 \
+  && echo rm /usr/src/modsecurity-2.9.1.tar.gz \
+  && rm /usr/src/modsecurity-2.9.1.tar.gz \
+	&& cd /usr/src/modsecurity  && ./configure --enable-standalone-module --disable-mlogc && make \
 	&& cd /usr/src/nginx-$NGINX_VERSION \
-	&& ./configure $CONFIG --with-debug \
+	&& ./configure $CONFIG --with-debug  --add-module=/usr/src/modsecurity/nginx/modsecurity \
 	&& make -j$(getconf _NPROCESSORS_ONLN) \
 	&& mv objs/nginx objs/nginx-debug \
 	&& mv objs/ngx_http_xslt_filter_module.so objs/ngx_http_xslt_filter_module-debug.so \
